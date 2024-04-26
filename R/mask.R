@@ -61,7 +61,7 @@ resetMask <- function(sdf, verbose = FALSE) {
 #' @param verbose print more messages
 #' @return a tibble of masks
 #' @examples
-#' listAvailableMasks("EPIC")
+#' listAvailableMasks("EPICv2")
 #' @export
 listAvailableMasks <- function(platform, verbose = FALSE) {
     stopifnot(is.character(platform))
@@ -70,6 +70,7 @@ listAvailableMasks <- function(platform, verbose = FALSE) {
 }
 
 ## list probes masked by probe nonuniqueness
+## used in background subtraction
 nonuniqMask <- function(platform, verbose = FALSE) {
     stopifnot(is.character(platform))
     dbnames <- listAvailableMasks(platform, verbose = verbose)
@@ -90,8 +91,8 @@ nonuniqMask <- function(platform, verbose = FALSE) {
 #' The returned name is the db name used in KYCG.mask
 #' @return a named list of mask names
 #' @examples
-#' recommendedMaskNames()[["EPIC"]]
 #' recommendedMaskNames()[["EPICv2"]]
+#' recommendedMaskNames()[["EPIC"]]
 #' 
 #' @export
 recommendedMaskNames <- function() {
@@ -113,43 +114,32 @@ recommendedMaskNames <- function() {
 #' get probe masking by mask names
 #' 
 #' @param platform EPICv2, EPIC, HM450, HM27, ...
-#' @param mask_names mask names (see listAvailableMasks), by default: NULL
-#' Note that setting this does not turn off recommended masking
-#' to turn off recommend masking, you need
-#' mask_names = "<your mask names>", use_recommended = FALSE
-#' to turn off all masking, you need
-#' mask_names = NULL, use_recommended = FALSE
-#' @param use_recommended whether or not to apply recommmended masking,
-#' by default: TRUE.
+#' @param mask_names mask names (see listAvailableMasks)
+#' by default: "recommended"
 #' see recommendedMaskNames() for detail.
 #' @return a vector of probe ID
 #' @examples
 #'
-#' recommendedMaskNames()[["EPIC"]]
+#' length(getMask("EPICv2", "recommended"))
+#' length(getMask("EPICv2", c("recommended", "M_SNPcommon_1pt")))
+#' length(getMask("EPICv2", "M_mapping"))
 #' length(getMask("EPIC"))
 #' length(getMask("HM450"))
 #' length(getMask("MM285"))
 #' 
 #' @export
-getMask <- function(platform = "EPICv2",
-    mask_names = NULL, use_recommended = TRUE) {
+getMask <- function(platform = "EPICv2", mask_names = "recommended") {
     stopifnot(is.character(platform))
-    masks <- NULL
-    if (use_recommended) {
-        masks <- c(masks, KYCG_getDBs(sprintf("%s.Mask", platform),
-            recommendedMaskNames()[[platform]], silent=TRUE, ignore.case=TRUE))
-    }
-
-    if (length(mask_names) > 0) {
-        masks <- c(masks, KYCG_getDBs(sprintf("%s.Mask", platform),
-            mask_names, silent=TRUE, ignore.case=TRUE))
-    }
-
-    if (is.null(masks)) {
-        NULL
-    } else {
-        unique(do.call(c, masks))
-    }
+    unique(do.call(c, lapply(mask_names, function(mask_name) {
+        if (mask_name == "recommended") {
+            do.call(c, KYCG_getDBs(sprintf("%s.Mask", platform),
+                recommendedMaskNames()[[platform]],
+                silent=TRUE, ignore.case=TRUE))
+        } else {
+            do.call(c, KYCG_getDBs(sprintf("%s.Mask", platform),
+                mask_name, silent=TRUE, ignore.case=TRUE))
+        }
+    })))
 }
 
 #' Mask beta values by design quality
@@ -158,8 +148,11 @@ getMask <- function(platform = "EPICv2",
 #' see also listAvailableMasks(sdfPlatform(sdf))
 #' 
 #' @param sdf a \code{SigDF} object
-#' @param verbose print more messages
-#' @param ... masking details see getMask()
+#' @param mask_names a vector of masking groups, see listAvailableMasks
+#' use "recommended" for recommended masking. One can also combine
+#' "recommended" with other masking groups by specifying a vector, e.g.,
+#' c("recommended", "M_mapping")
+#' @param verbose be verbose
 #' @return a filtered \code{SigDF}
 #' @examples
 #' sesameDataCache() # if not done yet
@@ -171,13 +164,14 @@ getMask <- function(platform = "EPICv2",
 #' ## list available masks, the dbname column
 #' listAvailableMasks(sdfPlatform(sdf))
 #' listAvailableMasks("EPICv2")
-#' 
+#'
 #' @export 
-qualityMask <- function(sdf, verbose = FALSE, ...) {
-
+qualityMask <- function(sdf,
+    mask_names="recommended", verbose=TRUE) {
+    
     ## mask by predefined sets
-    platform <- sdfPlatform(sdf, verbose = verbose)
-    masks <- getMask(platform, ...)
+    platform <- sdfPlatform(sdf, verbose=verbose)
+    masks <- getMask(platform, mask_names=mask_names)
     if (is.null(masks)) {
         return(sdf)
     } else {

@@ -4,14 +4,17 @@
 \alias{qualityMask}
 \title{Mask beta values by design quality}
 \usage{
-qualityMask(sdf, verbose = FALSE, ...)
+qualityMask(sdf, mask_names = "recommended", verbose = TRUE)
 }
 \arguments{
 \item{sdf}{a \code{SigDF} object}
 
-\item{verbose}{print more messages}
+\item{mask_names}{a vector of masking groups, see listAvailableMasks
+use "recommended" for recommended masking. One can also combine
+"recommended" with other masking groups by specifying a vector, e.g.,
+c("recommended", "M_mapping")}
 
-\item{...}{masking details see getMask()}
+\item{verbose}{be verbose}
 }
 \value{
 a filtered \code{SigDF}

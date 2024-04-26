@@ -18,5 +18,5 @@ a tibble of masks
 list existing quality masks for a SigDF
 }
 \examples{
-listAvailableMasks("EPIC")
+listAvailableMasks("EPICv2")
 }

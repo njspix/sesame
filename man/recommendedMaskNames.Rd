@@ -13,7 +13,7 @@ a named list of mask names
 The returned name is the db name used in KYCG.mask
 }
 \examples{
-recommendedMaskNames()[["EPIC"]]
 recommendedMaskNames()[["EPICv2"]]
+recommendedMaskNames()[["EPIC"]]
 
 }

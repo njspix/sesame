@@ -4,20 +4,13 @@
 \alias{getMask}
 \title{get probe masking by mask names}
 \usage{
-getMask(platform = "EPICv2", mask_names = NULL, use_recommended = TRUE)
+getMask(platform = "EPICv2", mask_names = "recommended")
 }
 \arguments{
 \item{platform}{EPICv2, EPIC, HM450, HM27, ...}
 
-\item{mask_names}{mask names (see listAvailableMasks), by default: NULL
-Note that setting this does not turn off recommended masking
-to turn off recommend masking, you need
-mask_names = "<your mask names>", use_recommended = FALSE
-to turn off all masking, you need
-mask_names = NULL, use_recommended = FALSE}
-
-\item{use_recommended}{whether or not to apply recommmended masking,
-by default: TRUE.
+\item{mask_names}{mask names (see listAvailableMasks)
+by default: "recommended"
 see recommendedMaskNames() for detail.}
 }
 \value{
@@ -28,7 +21,9 @@ get probe masking by mask names
 }
 \examples{
 
-recommendedMaskNames()[["EPIC"]]
+length(getMask("EPICv2", "recommended"))
+length(getMask("EPICv2", c("recommended", "M_SNPcommon_1pt")))
+length(getMask("EPICv2", "M_mapping"))
 length(getMask("EPIC"))
 length(getMask("HM450"))
 length(getMask("MM285"))
