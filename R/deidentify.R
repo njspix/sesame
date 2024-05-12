@@ -25,7 +25,7 @@
 deIdentify <- function(
     path, out_path=NULL, snps=NULL, mft=NULL, randomize=FALSE) {
 
-    res <- suppressWarnings(illuminaio::readIDAT(path))
+    res <- suppressWarnings(readIDAT(path))
     platform <- inferPlatformFromTango(res)
 
     if(is.null(out_path)) {
@@ -91,7 +91,7 @@ deIdentify <- function(
 #' @export
 reIdentify <- function(path, out_path=NULL, snps=NULL, mft=NULL) {
 
-    res <- suppressWarnings(illuminaio::readIDAT(path))
+    res <- suppressWarnings(readIDAT(path))
     platform <- inferPlatformFromTango(res)
 
     if(is.null(out_path)) {
