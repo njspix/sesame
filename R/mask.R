@@ -120,6 +120,7 @@ recommendedMaskNames <- function() {
 #' @return a vector of probe ID
 #' @examples
 #'
+#' length(getMask("MSA", "recommended"))
 #' length(getMask("EPICv2", "recommended"))
 #' length(getMask("EPICv2", c("recommended", "M_SNPcommon_1pt")))
 #' length(getMask("EPICv2", "M_mapping"))
@@ -130,16 +131,24 @@ recommendedMaskNames <- function() {
 #' @export
 getMask <- function(platform = "EPICv2", mask_names = "recommended") {
     stopifnot(is.character(platform))
-    unique(do.call(c, lapply(mask_names, function(mask_name) {
+    res <- lapply(mask_names, function(mask_name) {
         if (mask_name == "recommended") {
-            do.call(c, KYCG_getDBs(sprintf("%s.Mask", platform),
+            res <- KYCG_getDBs(sprintf("%s.Mask", platform),
                 recommendedMaskNames()[[platform]],
-                silent=TRUE, ignore.case=TRUE))
+                silent=TRUE, ignore.case=TRUE)
         } else {
-            do.call(c, KYCG_getDBs(sprintf("%s.Mask", platform),
-                mask_name, silent=TRUE, ignore.case=TRUE))
+            res <- KYCG_getDBs(sprintf("%s.Mask", platform),
+                mask_name, silent=TRUE, ignore.case=TRUE)
         }
-    })))
+        if (!is.null(res)) {
+            res <- do.call(c, res)
+        }
+        res
+    })
+    if (!is.null(res)) {
+        res <- unique(do.call(c, res))
+    }
+    res
 }
 
 #' Mask beta values by design quality
