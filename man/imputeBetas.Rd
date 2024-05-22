@@ -4,12 +4,20 @@
 \alias{imputeBetas}
 \title{Impute of missing data of specific platform}
 \usage{
-imputeBetas(betas, platform = NULL, celltype = NULL, sd_max = 999)
+imputeBetas(
+  betas,
+  platform = NULL,
+  BPPARAM = SerialParam(),
+  celltype = NULL,
+  sd_max = 999
+)
 }
 \arguments{
 \item{betas}{named vector of beta values}
 
 \item{platform}{platform}
+
+\item{BPPARAM}{use MulticoreParam(n) for parallel processing}
 
 \item{celltype}{celltype/tissue context of imputation, if not given, will
 use nearest neighbor to determine.}
@@ -21,4 +29,11 @@ imputed data, vector or matrix
 }
 \description{
 Impute of missing data of specific platform
+}
+\examples{
+betas = openSesame(sesameDataGet("EPIC.1.SigDF"))
+sum(is.na(betas))
+betas2 = imputeBetas(betas, "EPIC")
+sum(is.na(betas2))
+
 }

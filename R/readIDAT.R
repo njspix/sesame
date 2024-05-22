@@ -135,7 +135,7 @@ readIDAT_nonenc <- function(file, what = c("all", "IlluminaID", "nSNPsRead")) {
                 colnames(RunInfo) <- c("RunTime", "BlockType", "BlockPars",
                     "BlockCode", "CodeVersion")
                 for (ii in seq_len(nRunInfoBlocks)) {
-                    for (jj in 1:5) {
+                    for (jj in seq_len(5)) {
                         RunInfo[ii,jj] <- readString(con = con)
                     }
                 }
@@ -185,7 +185,7 @@ readIDAT_nonenc <- function(file, what = c("all", "IlluminaID", "nSNPsRead")) {
 
     fields <- matrix(0, nrow=nFields, ncol=3)
     colnames(fields) <- c("fieldCode", "byteOffset", "Bytes")
-    for (ii in 1:nFields) {
+    for (ii in seq_len(nFields)) {
         fields[ii,"fieldCode"] <- readShort(con, n=1)
         fields[ii,"byteOffset"] <- readLong(con, n=1)
     }
@@ -213,8 +213,8 @@ readIDAT_nonenc <- function(file, what = c("all", "IlluminaID", "nSNPsRead")) {
     )
 
     nNewFields <- 1
-    rownames(fields) <- paste("Null", 1:nFields)
-    for (ii in 1:nFields) {
+    rownames(fields) <- paste("Null", seq_len(nFields))
+    for (ii in seq_len(nFields)) {
         temp <- match(fields[ii,"fieldCode"], knownCodes)
         if (!is.na(temp)) {
             rownames(fields)[ii] <- names(knownCodes)[temp]
