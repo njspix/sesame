@@ -125,7 +125,8 @@ mLiftOver <- function(x,
                     sd_max = sd_max, celltype = celltype)}, BPPARAM=BPPARAM))
             colnames(betas) <- colnames(x)
         } else {
-            mapping <- convertProbeID(names(x), target_platform,
+            mapping <- convertProbeID(names(x),
+                target_platform, source_platform,
                 mapping = mapping, return_mapping = TRUE, include_new = TRUE)
             betas <- setNames(x[mapping$ID_source], mapping$ID_target)
             if (impute) {
@@ -136,7 +137,8 @@ mLiftOver <- function(x,
         betas
     } else if (is(x, "SigDF")) {
         mapping <- convertProbeID(
-            x$Probe_ID, target_platform, return_mapping = TRUE,
+            x$Probe_ID, target_platform, source_platform,
+            return_mapping = TRUE,
             target_uniq = TRUE, include_new = TRUE)
         x2 <- x[match(mapping$ID_source, x$Probe_ID),]
         x2$Probe_ID <- mapping$ID_target
