@@ -120,7 +120,8 @@ mLiftOver <- function(x,
     if (is.numeric(x)) {
         if (is.matrix(x)) {
             betas <- do.call(cbind, bplapply(seq_len(ncol(x)), function(i) {
-                mLiftOver(x[,i], target_platform, source_platform = NULL,
+                mLiftOver(x[,i], target_platform,
+                    source_platform = source_platform,
                     mapping = mapping, impute = impute,
                     sd_max = sd_max, celltype = celltype)}, BPPARAM=BPPARAM))
             colnames(betas) <- colnames(x)
