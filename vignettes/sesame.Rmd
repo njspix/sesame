@@ -211,34 +211,36 @@ See [Supplemental
 Vignette](https://zhou-lab.github.io/sesame/v1.16/supplemental.html#prepfuns)
 for details of preprocessing functions.
 
-# Lift over across platforms and imputation
+# Lift over across platforms
 
 To allow data integration across platforms, one can harmonize beta values,
 probe ID list and even signal intensities, to a different platform using the
 `mLiftOver` (methylation Lift Over) utility. The following examples illustrates
 these corresponding usages.
 
-## Project probe IDs to a different platform
+## Project probe IDs
 
 ```{r}
 cg_msa = names(sesameData_getManifestGRanges("MSA"))
+## only mappable probes, return mapping from MSA to HM450
 head(mLiftOver(cg_msa, "HM450"))
 
 cg_hm450 = grep("cg", names(sesameData_getManifestGRanges("HM450")), value=T)
+## only mappable probes, return mapping from HM450 to EPICv2
 head(mLiftOver(cg_hm450, "EPICv2"))
 ```
 
-## Project beta values with and without imputation
+## Project beta values
 
 ```{r}
 betas = openSesame(sesameDataGet("EPICv2.8.SigDF")[[1]])
 betas_epic = mLiftOver(betas, "EPIC", impute=FALSE)
-length(betas_epic)
-sum(is.na(betas_epic))
+length(betas_epic)     # EPIC platform dimension
+sum(is.na(betas_epic)) # NA values are present
 
-betas_epic = mLiftOver(betas, "EPIC", impute=TRUE)
-length(betas_epic)
-sum(is.na(betas_epic))
+betas_epic = imputeBetas(betas_epic)
+length(betas_epic)     # EPIC platform dimension
+sum(is.na(betas_epic)) # expect 0 NA after imputation
 
 ## use empirical evidence in mLiftOver
 mapping = sesameDataGet("liftOver.EPICv2ToEPIC")
@@ -246,15 +248,18 @@ betas_matrix = openSesame(sesameDataGet("EPICv2.8.SigDF")[1:2])
 dim(mLiftOver(betas_matrix, "EPIC", mapping = mapping))
 ## compare to without using empirical evidence
 dim(mLiftOver(betas_matrix, "EPIC"))
-
-## harmonize raw signal intensities stored as a SigDF
-sdf = sesameDataGet("EPICv2.8.SigDF")[["GM12878_206909630042_R08C01"]]
-dim(mLiftOver(sdf, "EPICv2"))
-dim(mLiftOver(sdf, "EPIC"))
-dim(mLiftOver(sdf, "HM450"))
 ```
 
-# Collapse measurements to cg prefixes
+## Project signal SigDFs
+
+```{r}
+sdf = sesameDataGet("EPICv2.8.SigDF")[["GM12878_206909630042_R08C01"]]
+dim(mLiftOver(sdf, "EPICv2")) # EPICv2 platform dimension
+dim(mLiftOver(sdf, "EPIC"))   # EPIC platform dimension
+dim(mLiftOver(sdf, "HM450"))  # HM450 platform dimension
+```
+
+# Collapse to cg prefixes
 
 The more recent Infinium arrays (the mouse, EPICv2, and MSA arrays) have
 suffixes to uniquely identify the probe design. If one prefers to collapse
