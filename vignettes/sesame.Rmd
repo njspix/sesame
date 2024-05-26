@@ -211,13 +211,56 @@ See [Supplemental
 Vignette](https://zhou-lab.github.io/sesame/v1.16/supplemental.html#prepfuns)
 for details of preprocessing functions.
 
+# Lift over across platforms and imputation
+
+To allow data integration across platforms, one can harmonize beta values,
+probe ID list and even signal intensities, to a different platform using the
+`mLiftOver` (methylation Lift Over) utility. The following examples illustrates
+these corresponding usages.
+
+## Project probe IDs to a different platform
+
+```{r}
+cg_msa = names(sesameData_getManifestGRanges("MSA"))
+head(mLiftOver(cg_msa, "HM450"))
+
+cg_hm450 = grep("cg", names(sesameData_getManifestGRanges("HM450")), value=T)
+head(mLiftOver(cg_hm450, "EPICv2"))
+```
+
+## Project beta values with and without imputation
+
+```{r}
+betas = openSesame(sesameDataGet("EPICv2.8.SigDF")[[1]])
+betas_epic = mLiftOver(betas, "EPIC", impute=FALSE)
+length(betas_epic)
+sum(is.na(betas_epic))
+
+betas_epic = mLiftOver(betas, "EPIC", impute=TRUE)
+length(betas_epic)
+sum(is.na(betas_epic))
+
+## use empirical evidence in mLiftOver
+mapping = sesameDataGet("liftOver.EPICv2ToEPIC")
+betas_matrix = openSesame(sesameDataGet("EPICv2.8.SigDF")[1:2])
+dim(mLiftOver(betas_matrix, "EPIC", mapping = mapping))
+## compare to without using empirical evidence
+dim(mLiftOver(betas_matrix, "EPIC"))
+
+## harmonize raw signal intensities stored as a SigDF
+sdf = sesameDataGet("EPICv2.8.SigDF")[["GM12878_206909630042_R08C01"]]
+dim(mLiftOver(sdf, "EPICv2"))
+dim(mLiftOver(sdf, "EPIC"))
+dim(mLiftOver(sdf, "HM450"))
+```
+
 # Collapse measurements to cg prefixes
 
-The more recent Infinium arrays (the mouse and EPICv2 arrays) have suffixes to
-uniquely identify the probe design. If one prefers to collapse methylation
-readings to the cg prefix so they are comparable to the previous array
-generations, this can be done with `getBetas(..., collapseToPfx = TRUE)`. The
-same argument can be passed to `openSesame(..., func=getBetas,
+The more recent Infinium arrays (the mouse, EPICv2, and MSA arrays) have
+suffixes to uniquely identify the probe design. If one prefers to collapse
+methylation readings to the cg prefix so they are comparable to the previous
+array generations, this can be done with `getBetas(..., collapseToPfx =
+TRUE)`. The same argument can be passed to `openSesame(..., func=getBetas,
 collapseToPfx=TRUE)`
 
 ```{r eval=FALSE}
