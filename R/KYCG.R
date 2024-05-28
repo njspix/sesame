@@ -87,7 +87,8 @@ testEnrichment <- function(
     
     if (is.null(databases)) {
         dbs <- c(KYCG_getDBs(KYCG_listDBGroups( # by default, all dbs + gene
-            platform, type="categorical")$Title, silent = silent))
+            sprintf("%s\\.", platform), type="categorical")$Title,
+            silent = silent))
     } else if (is.character(databases)) {
         dbs <- KYCG_getDBs(databases, platform = platform, silent = silent)
     } else {

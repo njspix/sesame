@@ -86,7 +86,8 @@ smry = DML(se, ~tissue + sex)
 smry
 ```
 
-You can use `mc.cores` argument to parallelize the computing.
+You can use `DML(..., BPPARAM=BiocParallel::MulticoreParam(8))` argument to
+parallelize the computing.
 
 # Test Interpretation
 
