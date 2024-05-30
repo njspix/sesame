@@ -225,7 +225,8 @@ cg_msa = names(sesameData_getManifestGRanges("MSA"))
 ## only mappable probes, return mapping from MSA to HM450
 head(mLiftOver(cg_msa, "HM450"))
 
-cg_hm450 = grep("cg", names(sesameData_getManifestGRanges("HM450")), value=T)
+cg_hm450 = names(sesameData_getManifestGRanges("HM450"))
+cg_hm450 = grep("cg", cg_hm450, value=TRUE)
 ## only mappable probes, return mapping from HM450 to EPICv2
 head(mLiftOver(cg_hm450, "EPICv2"))
 ```
