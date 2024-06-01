@@ -14,11 +14,9 @@ setMethod("as.data.frame", signature="sesameQC",
 #' @param df a publicQC data frame
 #' @return a list sesameQC objects
 #' @importFrom methods new
-#' @examples
-#' df <- sesameDataGet("MM285.publicQC")
-#' qcs <- dataFrame2sesameQC(df[1:2,])
-#' @export
 dataFrame2sesameQC <- function(df) {
+    ## df <- sesameDataGet("MM285.publicQC")
+    ## qcs <- dataFrame2sesameQC(df[1:2,])
     groups <- c(
         .setGroup_detection(),
         .setGroup_numProbes(),
@@ -31,6 +29,31 @@ dataFrame2sesameQC <- function(df) {
             TRUE } else { FALSE }}, logical(1))]
     lapply(seq_len(nrow(df)), function(i) {
         new("sesameQC", group=groups, stat=df[i,])})
+}
+
+#' Convert a list of sesameQC to data frame
+#'
+#' @param qcs sesameQCs
+#' @param cols QC columns, use NULL to report all
+#' @return a data frame
+#' @examples
+#' sdf <- sesameDataGet("EPIC.1.SigDF")
+#' qcs <- sesameQC_calcStats(sdf, "detection")
+#' sesameQCtoDF(qcs)
+#' @export
+sesameQCtoDF <- function(qcs, cols=c("frac_dt_cg","RGdistort", "RGratio")) {
+    if (is.list(qcs)) {
+        df <- bind_rows(lapply(qcs, sesameQCtoDF))
+    } else if (is(qcs, "sesameQC")) {
+        df <- as.data.frame(qcs@stat)
+    }
+    if (!is.null(cols) && any(colnames(df) %in% cols)) {
+        df <- df[, colnames(df) %in% cols, drop=FALSE]
+    }
+    if (!is.null(names(qcs))) {
+        df <- cbind(IDAT=names(qcs), df)
+    }
+    df
 }
 
 ## ' The display method for sesameQC

@@ -15,7 +15,3 @@ a list sesameQC objects
 \description{
 The function convert a data frame back to a list of sesameQC objects
 }
-\examples{
-df <- sesameDataGet("MM285.publicQC")
-qcs <- dataFrame2sesameQC(df[1:2,])
-}

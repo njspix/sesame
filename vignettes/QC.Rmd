@@ -28,7 +28,7 @@ off preprocessing using `prep=""`:
 
 ```{r qc1, eval=FALSE}
 ## calculate metrics on all IDATs in a specific folder
-qcs = openSesame(idat_dir, prep="", func=sesameQC_calcStats)
+sesameQCtoDF(openSesame(idat_dir, prep="", func=sesameQC_calcStats))
 ```
 
 SeSAMe divides sample quality metrics into multiple groups. These groups are
