@@ -226,7 +226,7 @@ estimateCellComposition <- function(
 #' sesameDataGet_resetEnv()
 #' 
 #' @export
-estimateLeukocyte<-function(betas.tissue, betas.leuko = NULL,
+estimateLeukocyte <- function(betas.tissue, betas.leuko = NULL,
     betas.tumor = NULL, platform = c('EPIC','HM450','HM27')){
     
     platform <- match.arg(platform)

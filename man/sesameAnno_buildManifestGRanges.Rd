@@ -30,9 +30,9 @@ http://zwdzwd.github.io/InfiniumAnnotation
 }
 \examples{
 \dontrun{
-## download tsv from
-## http://zwdzwd.github.io/InfiniumAnnotation
-tsv_path = sesameAnno_download("HM450.hg38.manifest.tsv.gz")
-gr <- sesameAnno_buildManifestGRanges(tsv_path)
+tsv = sesameAnno_download("HM450.hg38.manifest.tsv.gz")
+gr <- sesameAnno_buildManifestGRanges(tsv)
+## direct access
+gr <- sesameAnno_buildManifestGRanges("HM450.hg38.manifest")
 }
 }

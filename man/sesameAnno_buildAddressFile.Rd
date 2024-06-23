@@ -17,9 +17,7 @@ Build sesame ordering address file from tsv
 }
 \examples{
 \dontrun{
-## download manifest from
-## http://zwdzwd.github.io/InfiniumAnnotation
-tsv_path = sesameAnno_download("HM450.hg38.manifest.tsv.gz")
-addr <- sesameAnno_buildAddressFile(tsv_path)
+tsv = sesameAnno_download("HM450.hg38.manifest.tsv.gz")
+addr <- sesameAnno_buildAddressFile(tsv)
 }
 }

@@ -4,18 +4,12 @@
 \alias{sesameAnno_download}
 \title{Download SeSAMe annotation files}
 \usage{
-sesameAnno_download(
-  url,
-  destfile = tempfile(basename(url)),
-  base = "https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/"
-)
+sesameAnno_download(url, destfile = tempfile(basename(url)))
 }
 \arguments{
 \item{url}{url or title of the annotation file}
 
 \item{destfile}{download to this file, a temp file if unspecified}
-
-\item{base}{base url, usually fixed.}
 }
 \value{
 the path to downloaded file
@@ -33,8 +27,8 @@ files in a cleaner way without routing through BiocFileCache
 }
 \examples{
 
+\dontrun{
 ## avoid testing as this function uses external host
-if (FALSE) {
 sesameAnno_download("Test/3999492009_R01C01_Grn.idat")
 sesameAnno_download("EPIC.hg38.manifest.tsv.gz")
 sesameAnno_download("EPIC.hg38.snp.tsv.gz")

@@ -16,26 +16,27 @@ guess_chrmorder <- function(chrms) {
 #' @param decoy consider decoy sequence in chromosome order
 #' @param columns the columns to include in the GRanges
 #' @importFrom SummarizedExperiment metadata<-
+#' @importFrom BiocFileCache BiocFileCache
+#' @importFrom BiocFileCache bfcrpath
+#' @importFrom readr read_tsv
+#' @importFrom readr cols
+#' @importFrom readr col_integer
+#' @importFrom readr col_character
+#' @importFrom GenomeInfoDb Seqinfo
 #' @return GRanges
 #' @examples
 #' \dontrun{
-#' ## download tsv from
-#' ## http://zwdzwd.github.io/InfiniumAnnotation
-#' tsv_path = sesameAnno_download("HM450.hg38.manifest.tsv.gz")
-#' gr <- sesameAnno_buildManifestGRanges(tsv_path)
+#' tsv = sesameAnno_download("HM450.hg38.manifest.tsv.gz")
+#' gr <- sesameAnno_buildManifestGRanges(tsv)
+#' ## direct access
+#' gr <- sesameAnno_buildManifestGRanges("HM450.hg38.manifest")
 #' }
 #' @export
 sesameAnno_buildManifestGRanges <- function(
     tsv, genome = NULL, decoy = FALSE, columns = NULL) {
 
-    if (is.character(tsv)) { # file path
-        if (startsWith(tsv, "https:")) { # url
-            tsv <- sesameAnno_readManifestTSV(gzcon(url(tsv)))
-        } else if (file.exists(tsv) && !dir.exists(tsv)) { # file path
-            tsv <- sesameAnno_readManifestTSV(tsv)
-        } else {
-            stop(sprintf("File %s cannot be found.", tsv))
-        }
+    if (is.character(tsv)) {
+        tsv <- sesameAnno_readManifestTSV(tsv)
     }
     
     chrms <- tsv$CpG_chrm
@@ -70,7 +71,7 @@ sesameAnno_buildManifestGRanges <- function(
     sort(gr, ignore.strand = TRUE)
 }
 
-create_mask <- function(df) {
+create_default_mask <- function(df) {
     unmapped <- (
         is.na(df$mapAS_A) | df$mapAS_A < 35 |
         (!is.na(df$mapAS_B) & df$mapAS_B < 35))
@@ -94,19 +95,37 @@ create_mask <- function(df) {
         "ref_issue","nonunique","low_mapq","control","design_issue")]
 }
 
+valid_url <- function(url_in,t=2){
+    con <- url(url_in)
+    check <- suppressWarnings(try(open.connection(
+        con,open="rt",timeout=t),silent=TRUE)[1])
+    suppressWarnings(try(close.connection(con),silent=TRUE))
+    ifelse(is.null(check),TRUE,FALSE)
+}
+
 #' Read manifest file to a tsv format
 #' 
 #' @param tsv_fn tsv file path
 #' @return a manifest as a tibble
 #' @examples
 #' \dontrun{
-#' ## download manifest from
-#' ## http://zwdzwd.github.io/InfiniumAnnotation
-#' tsv_path = sesameAnno_download("HM450.hg38.manifest.tsv.gz")
-#' mft <- sesameAnno_readManifestTSV(tsv_path)
+#' tsv = sesameAnno_download("HM450.hg38.manifest.tsv.gz")
+#' mft <- sesameAnno_readManifestTSV(tsv)
+#' ## direct access
+#' mft <- sesameAnno_readManifestTSV("HM450.hg38.manifest")
 #' }
 #' @export
 sesameAnno_readManifestTSV <- function(tsv_fn) {
+
+    if (is.character(tsv_fn) && !file.exists(tsv_fn)) {
+        ## if file doesn't exist, try remote
+        tsv_fn <- expand_url(tsv_fn)
+        if (!valid_url(tsv_fn)) {
+            stop(sprintf("File %s cannot be found.", tsv_fn))
+        }
+        return(sesameAnno_readManifestTSV(gzcon(url(tsv_fn))))
+    }
+
     read_tsv(
         tsv_fn, col_types=cols(
             CpG_chrm = col_character(),
@@ -136,29 +155,19 @@ sesameAnno_readManifestTSV <- function(tsv_fn) {
 #' @return a list of ordering and controls
 #' @examples
 #' \dontrun{
-#' ## download manifest from
-#' ## http://zwdzwd.github.io/InfiniumAnnotation
-#' tsv_path = sesameAnno_download("HM450.hg38.manifest.tsv.gz")
-#' addr <- sesameAnno_buildAddressFile(tsv_path)
+#' tsv = sesameAnno_download("HM450.hg38.manifest.tsv.gz")
+#' addr <- sesameAnno_buildAddressFile(tsv)
 #' }
 #' @export
 sesameAnno_buildAddressFile <- function(tsv) {
-
-    if (is.character(tsv)) { # string input
-        if (startsWith(tsv, "https:")) { # url
-            tsv <- sesameAnno_readManifestTSV(gzcon(url(tsv)))
-        } else if (file.exists(tsv) && !dir.exists(tsv)) { # file path
-            tsv <- sesameAnno_readManifestTSV(tsv)
-        } else {
-            stop(sprintf("File %s cannot be found.", tsv))
-        }
+    if (is.character(tsv)) {
+        tsv <- sesameAnno_readManifestTSV(tsv)
     }
-    
     ordering <- data.frame(
         Probe_ID = tsv$Probe_ID,
         M=tsv$address_B, U=tsv$address_A,
         col=factor(tsv$channel, levels=c("G","R")), mask=FALSE)
-    ordering$mask <- create_mask(tsv)$ref_issue
+    ordering$mask <- create_default_mask(tsv)$ref_issue
 
     message(sprintf("%d probes masked", sum(ordering$mask)))
     message(sprintf("%d probes/rows in ordering", nrow(ordering)))
@@ -168,78 +177,59 @@ sesameAnno_buildAddressFile <- function(tsv) {
     ordering
 }
 
-################## DEPRECATED FUNCTIONS ##############
-
-#' retrieve additional annotation files
-#' @param title title of the annotation file
-#' @param version version number
-#' @param dest_dir if not NULL, download to this directory
-#' @return annotation file
+#' Annotate a data.frame using manifest
+#'
+#' @param df input data frame with Probe_ID as a column
+#' @param probe_id the Probe_ID column name, default to "Probe_ID" or
+#' rownames
+#' @param platform which array platform, guess from probe ID if not given
+#' @param genome the genome build, use default if not given
+#' @return a new data.frame with manifest attached
 #' @examples
-#' cat("Deprecated!")
-#' 
-#' @export
-sesameData_getAnno <- function(
-    title, version = 1, dest_dir = NULL) {
-    .Deprecated("sesameAnno_get")
-}
-
-#' download Infinium manifest from the associated Github repository
-#'
-#' Since most of the annotation is not essential to sesame functioning,
-#' sesameData package no longer host the full manifest. This is
-#' the command to use to retrieve the full manifest and other annotation
-#' from the following Github host:
-#'
-#' https://github.com/zhou-lab/InfiniumAnnotationV1
-#' 
-#' Please check the repo itself for what is available.
-#' See also
-#' http://zwdzwd.github.io/InfiniumAnnotation
-#'
-#' Unless return_path = TRUE, This function calls import function
-#' depending on the resource name suffix. If the url ends with
-#' .rds, it will use readRDS. If the url ends with .tsv.gz it will
-#' use read_tsv. For all other cases, the function will return the
-#' cached file name.
-#'
-#' This function replaces sesameAnno_getManifestDF.
-#'
-#' @param title the title of the resource
-#' @param return_path return cached file path
-#' @param version release version, default is the latest
-#' @return tibble
-#' @importFrom BiocFileCache BiocFileCache
-#' @importFrom BiocFileCache bfcrpath
-#' @importFrom readr read_tsv
-#' @importFrom readr cols
-#' @importFrom readr col_integer
-#' @importFrom readr col_character
-#' @importFrom GenomeInfoDb Seqinfo
-#' @examples
-#' 
-#' ## avoid testing since it depends on external host
-#' if (FALSE) {
-#' mapping <- sesameAnno_get("Mammal40/hg38.tsv.gz")
-#' annoI <- sesameAnno_get("Anno/EPIC/EPIC.hg19.typeI_overlap_b151.rds")
-#' mft <- sesameAnno_get("Anno/MM285/MM285.mm10.manifest.tsv.gz")
+#' \dontrun{
+#' df <- data.frame(Probe_ID = c("cg00101675_BC21", "cg00116289_BC21"))
+#' sesameAnno_attachManifest(df)
 #' }
 #' @export
-sesameAnno_get <- function(title,
-    return_path = FALSE,
-    version = 1) {
-    message("The function is deprecated. Please download files directly
-from http://zwdzwd.github.io/InfiniumAnnotation
-")
+sesameAnno_attachManifest <- function(
+    df, probe_id="Probe_ID", platform=NULL, genome=NULL) {
+    df <- as.data.frame(df)
+    stopifnot(is(df, "data.frame"))
+    stopifnot(probe_id %in% colnames(df))
+
+    if (is.null(platform)) {
+        platform <- inferPlatformFromProbeIDs(df[[probe_id]]) }
+
+    genome <- sesameData_check_genome(genome, platform)
+
+    mft <- sesameAnno_readManifestTSV(
+        sprintf("%s.%s.manifest", platform, genome))
+    if (platform %in% c("HM27","HM450")) {
+        mft_probeid <- "probeID"
+    } else {
+        mft_probeid <- "Probe_ID"
+    }
+    cbind(df, as.data.frame(mft)[match(df[[probe_id]], mft[[mft_probeid]]),])
 }
 
-## valid_url <- function(url_in,t=2){
-##     con <- url(url_in)
-##     check <- suppressWarnings(try(open.connection(
-##         con,open="rt",timeout=t),silent=TRUE)[1])
-##     suppressWarnings(try(close.connection(con),silent=TRUE))
-##     ifelse(is.null(check),TRUE,FALSE)
-## }
+expand_url <- function(url,
+    base = "https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/") {
+    ## input can be :
+    ## EPIC.hg38.manifest.tsv.gz
+    ## /Test/3999492009_R01C01_Grn.idat
+    ## https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/Anno/EPIC/EPIC.hg19.manifest.tsv.gz
+    if (!any(endsWith(url, c("rds","tsv.gz")))) {
+        url <- sprintf("%s.tsv.gz", url)
+    }
+    if (!grepl("http", url)) {
+        if (!grepl("/", url)) {
+            url <- sprintf("Anno/%s/%s",
+                strsplit(url, "\\.")[[1]][1], url)
+        }
+        url <- sprintf("%s/%s", base, url)
+    }
+    url
+}
 
 #' Download SeSAMe annotation files
 #'
@@ -254,13 +244,12 @@ from http://zwdzwd.github.io/InfiniumAnnotation
 #'
 #' @param url url or title of the annotation file
 #' @param destfile download to this file, a temp file if unspecified
-#' @param base base url, usually fixed.
 #' @return the path to downloaded file
 #' @importFrom utils download.file
 #' @examples
 #'
+#' \dontrun{
 #' ## avoid testing as this function uses external host
-#' if (FALSE) {
 #' sesameAnno_download("Test/3999492009_R01C01_Grn.idat")
 #' sesameAnno_download("EPIC.hg38.manifest.tsv.gz")
 #' sesameAnno_download("EPIC.hg38.snp.tsv.gz")
@@ -268,14 +257,8 @@ from http://zwdzwd.github.io/InfiniumAnnotation
 #' 
 #' @export
 sesameAnno_download <- function(
-    url, destfile = tempfile(basename(url)),
-    base="https://github.com/zhou-lab/InfiniumAnnotationV1/raw/main/") {
-    if (!grepl("http", url)) {
-        if (!grepl("/", url)) {
-            url <- paste0("Anno","/",strsplit(url, "\\.")[[1]][1],"/",url);
-        }
-        url <- paste0(base,"/",url)
-    }
+    url, destfile = tempfile(basename(url))) {
+    url <- expand_url(url)
     download.file(url, destfile=destfile)
     destfile
 }
