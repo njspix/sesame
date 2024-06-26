@@ -114,6 +114,11 @@ totalIntensities <- function(sdf, mask = FALSE) {
     setNames(s$M+s$U, s$Probe_ID)
 }
 
+remove_suffix <- function(tok) {
+    vapply(strsplit(tok, "_"),
+        function(x) x[1], character(1))
+}
+
 #' collapse to probe prefix
 #'
 #' @param sdf a SigDF object
@@ -121,8 +126,7 @@ totalIntensities <- function(sdf, mask = FALSE) {
 #' @importFrom dplyr slice_min
 #' @importFrom dplyr group_by
 SDFcollapseToPfx <- function(sdf) {
-    sdf$Probe_ID <- vapply(strsplit(sdf$Probe_ID, '_'),
-        function(x) x[1], character(1))
+    sdf$Probe_ID <- remove_suffix(sdf$Probe_ID)
     sdf$pval <- pOOBAH(sdf, return.pval = TRUE)
     ## take the best by p-value
     ## Note that mask = FALSE will override p-value
@@ -152,8 +156,7 @@ SDFcollapseToPfx <- function(sdf) {
 #' @export
 betasCollapseToPfx <- function(betas, BPPARAM=SerialParam()) {
     if (is.matrix(betas)) {
-        pfxes <- vapply(strsplit(rownames(betas), "_"),
-            function(x) x[1], character(1))
+        pfxes <- remove_suffix(rownames(betas))
         out <- do.call(cbind, bplapply(
             seq_len(ncol(betas)), function(i) {
                 vapply(split(betas[,i], pfxes), mean, numeric(1), na.rm=TRUE)
@@ -161,8 +164,7 @@ betasCollapseToPfx <- function(betas, BPPARAM=SerialParam()) {
         colnames(out) <- colnames(betas)
         out
     } else {
-        pfxes <- vapply(strsplit(names(betas), "_"),
-            function(x) x[1], character(1))
+        pfxes <- remove_suffix(names(betas))
         vapply(split(betas, pfxes), mean, numeric(1), na.rm=TRUE)
     }
 }

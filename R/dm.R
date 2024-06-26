@@ -301,6 +301,10 @@ dmr_merge_cpgs <- function(betas, probe.coords, dist.cutoff, seg.per.locus) {
 
     betas.noNA <- betas[!apply(betas, 1, function(x) all(is.na(x))),]
     cpg.ids <- intersect(rownames(betas.noNA), names(probe.coords))
+    if (length(cpg.ids)==0) {
+        names(probe.coords) <- remove_suffix(names(probe.coords))
+        cpg.ids <- intersect(rownames(betas.noNA), names(probe.coords))
+    }
     probe.coords <- GenomicRanges::sort(probe.coords[cpg.ids])
     betas.coord.srt <- betas.noNA[names(probe.coords),]
     
