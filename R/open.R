@@ -16,6 +16,7 @@ prepSesameList <- function() {
         c("P", "pOOBAH", "Detection p-value masking using oob"),
         c("I", "ELBAR", "Mask background-dominated readings"),
         c("B", "noob", "Background subtraction using oob"),
+        c("U", "scrub", "More aggressive background subtraction using scrub"),
         c("S", "inferSpecies", "Set species-specific mask"),
         c("T", "inferStrain", "Set strain-specific mask (mouse)"),
         c("M", "matchDesign", "Match Inf-I/II in beta distribution")))
