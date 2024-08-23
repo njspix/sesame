@@ -9,6 +9,9 @@
 #' @return a data frame of normalization control signals
 normControls <- function(sdf, average = FALSE, verbose = FALSE) {
     df <- controls(sdf)
+    if (is.null(df$Type)) {
+        df$Type <- df$Probe_ID
+    }
     df <- df[grep('norm(_|\\.)', tolower(df$Type)),]
 
     ## stop if no control probes
@@ -21,9 +24,9 @@ normControls <- function(sdf, average = FALSE, verbose = FALSE) {
         df$channel <- ifelse(grepl('norm_(c|g)', tolower(df$Type)), 'G', 'R')
     }
     
-    if (average) {
-        ## this is the old fashioned way
-        c(G=mean(df[df$channel=='G','UG'], na.rm=TRUE),
+    if (average) { # summarize to G and R mean
+        c(
+            G=mean(df[df$channel=='G','UG'], na.rm=TRUE),
             R=mean(df[df$channel=='R','UR'], na.rm=TRUE))
     } else {
         df
