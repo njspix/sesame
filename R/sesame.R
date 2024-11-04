@@ -275,11 +275,15 @@ getAFs <- function(sdf, ...) {
 inferPlatformFromTango <- function(res) {
     sig <- sesameDataGet('idatSignature')
     cnts <- vapply(
-        sig, function(x) sum(x %in% rownames(res$Quants)), integer(1))
-    if (max(cnts) < min(vapply(sig, length, numeric(1)))) {
-        return(NULL)
+        sig, 
+        function(x) sum(x %in% rownames(res$Quants)), 
+        integer(1)
+    )
+    # If more than one platform has hits:
+    if (sum(cnts > 0) > 1) {
+      return(NULL)
     }
-    names(which.max(cnts))
+    names(cnts[which.max(cnts)])
 }
 
 ## Import one IDAT file
