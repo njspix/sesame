@@ -50,7 +50,7 @@ requirements:
     # whose registry carries the CNV normal panels that `cnv` reads, and v1.57
     # the first with `rowsub -w/-M`, which the describe-probe --genome pipeline
     # in our own docs pipes into.
-    - yame >=1.57
+    - yame >=1.59
 
 test:
   commands:
