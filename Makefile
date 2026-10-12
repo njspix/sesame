@@ -62,7 +62,7 @@ OBJ     := $(SRC:.c=.o)
 CLI_OBJ := $(CLI_SRC:.c=.o)
 BIN     := sesame
 
-.PHONY: test-qcdpb-HM450 test-qcdpb-EPIC test-qcdpb-EPICv2 test-qcdpb-MSA test-qcdpb test-betas-HM450 test-betas-EPIC test-betas-EPICv2 test-betas-MSA test-prep-HM450 test-prep-EPIC test-prep-EPICv2 test-prep-MSA test-pneg-HM450 test-pneg-EPIC test-pneg-EPICv2 test-pneg-MSA test-dyebiasL-HM450 test-dyebiasL-EPIC test-dyebiasL-EPICv2 test-dyebiasL-MSA test-gct-HM450 test-gct-EPIC test-gct-EPICv2 test-gct-MSA test-liftover-toEPIC test-liftover-toEPICv2 test-liftover-genome test-liftover-formats all asan docs test test-docs test-docs-check test-errors test-idat test-betas test-prep test-qmask test-qcdpb test-poobah test-noob test-dyebiasL test-pneg test-collapse test-liftover test-impute test-gct test-neighbors test-batch test-qc test-dml test-cg test-describe test-cnv test-cbs test-vcf test-deidentify gate index cnv-normals registry yame-lib install fuzz fuzz-replay clean
+.PHONY: test-platform test-qcdpb-HM450 test-qcdpb-EPIC test-qcdpb-EPICv2 test-qcdpb-MSA test-qcdpb test-betas-HM450 test-betas-EPIC test-betas-EPICv2 test-betas-MSA test-prep-HM450 test-prep-EPIC test-prep-EPICv2 test-prep-MSA test-pneg-HM450 test-pneg-EPIC test-pneg-EPICv2 test-pneg-MSA test-dyebiasL-HM450 test-dyebiasL-EPIC test-dyebiasL-EPICv2 test-dyebiasL-MSA test-gct-HM450 test-gct-EPIC test-gct-EPICv2 test-gct-MSA test-liftover-toEPIC test-liftover-toEPICv2 test-liftover-genome test-liftover-formats all asan docs test test-docs test-docs-check test-errors test-idat test-betas test-prep test-qmask test-qcdpb test-poobah test-noob test-dyebiasL test-pneg test-collapse test-liftover test-impute test-gct test-neighbors test-batch test-qc test-dml test-cg test-describe test-cnv test-cbs test-vcf test-deidentify gate index cnv-normals registry yame-lib install fuzz fuzz-replay clean
 
 all: $(BIN)
 
@@ -134,7 +134,7 @@ asan: clean
 	$(MAKE) EXTRA_CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
 	        EXTRA_LDFLAGS="-fsanitize=address,undefined"
 
-test: test-errors test-idat test-betas test-prep test-qmask test-qcdpb test-poobah test-noob test-dyebiasL test-pneg test-collapse test-liftover test-impute test-gct test-neighbors test-batch test-qc test-dml test-cg test-describe test-cnv test-cbs test-vcf test-deidentify test-docs-check
+test: test-errors test-platform test-idat test-betas test-prep test-qmask test-qcdpb test-poobah test-noob test-dyebiasL test-pneg test-collapse test-liftover test-impute test-gct test-neighbors test-batch test-qc test-dml test-cg test-describe test-cnv test-cbs test-vcf test-deidentify test-docs-check
 
 # --- the slow drivers, split one target per platform -------------------------
 #
@@ -236,6 +236,11 @@ test-liftover: test-liftover-toEPIC test-liftover-toEPICv2 test-liftover-genome 
 # store, no IDATs -- so this one also runs in CI.
 test-errors: $(BIN) mu2cg
 	@tests/run_errors.sh
+
+# A named --platform with a bead count the registry does not know: read with a
+# warning (EPIC+ as EPIC); without --platform still refused. Real IDATs.
+test-platform: $(BIN)
+	@tests/run_platform.sh
 
 test-idat: $(BIN)
 	@tests/run_golden.sh

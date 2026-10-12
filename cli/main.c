@@ -168,6 +168,8 @@ static int usage_preprocess(void)
     yame_usage_sec("Notes:");
     yame_usage_text("Without --index the platform comes from the bead count and the");
     yame_usage_text("ordering from the shared store ($YAME_DATA_HOME), then ./.");
+    yame_usage_text("A named --platform also reads IDATs whose bead count differs");
+    yame_usage_text("(e.g. EPIC+ as EPIC), warning how many probes will be NA.");
     return 1;
 }
 
@@ -475,13 +477,29 @@ static const char *path_basename(const char *p)
     return s ? s + 1 : p;
 }
 
+/* The bead count the registry gives a platform name; 0 if it has none. */
+static int32_t registry_beads(const char *platform)
+{
+    for (const sesame_reg_t *r = SESAME_REGISTRY; r->platform; r++)
+        if (strcmp(r->platform, platform) == 0) return r->beads;
+    return 0;
+}
+
 /* Read one prefix's IDAT pair and build its SigDF against the shared index. If
  * expect_plat is non-NULL the sample's detected platform must match it -- this
- * guards a mixed-platform batch from silently producing a misaligned column. */
+ * guards a mixed-platform batch from silently producing a misaligned column.
+ *
+ * Unless the user NAMED that platform (named != 0): then a bead count the
+ * registry does not know is a revision of the chip (EPIC+ has 1,055,583 beads
+ * to EPIC's 1,051,815), not a different array. The sample is read anyway, and
+ * one warning says how many of the platform's probes have no address in this
+ * IDAT -- those come out NA. A wrong --platform shows up there as a large
+ * share; it is a warning, not an error, by decision (zhou-lab/sesame#2). */
 static int build_sigdf_for(const char *prefix, const sesame_index_t *ix,
-                           const char *expect_plat, int min_beads,
+                           const char *expect_plat, int named, int min_beads,
                            sesame_sigdf_t **out, sesame_err_t *err)
 {
+    int mismatch = 0;
     char gpath[4096], rpath[4096];
     sesame_idat_t *g = NULL, *r = NULL;
     sesame_sigdf_t *s = NULL;
@@ -498,15 +516,26 @@ static int build_sigdf_for(const char *prefix, const sesame_index_t *ix,
     if (expect_plat) {
         const char *p = sesame_platform_from_beads(g->n);
         if (!p || strcmp(p, expect_plat) != 0) {
-            rc = sesame__fail(err, SESAME_ERR_FORMAT,
-                "%s is %s (%d beads), not the batch platform %s",
-                prefix, p ? p : "unknown", g->n, expect_plat);
-            goto done;
+            if (!named) {
+                rc = sesame__fail(err, SESAME_ERR_FORMAT,
+                    "%s is %s (%d beads), not the batch platform %s",
+                    prefix, p ? p : "unknown", g->n, expect_plat);
+                goto done;
+            }
+            mismatch = 1;
         }
     }
 
     if (!(s = sesame_sigdf_from_idats(g, r, ix, min_beads, err))) {
         rc = err ? err->code : SESAME_ERR_IO; goto done;
+    }
+    if (mismatch) {
+        double pct = s->n ? 100.0 * s->n_addr_missing / s->n : 0.0;
+        fprintf(stderr, "sesame: warning: %s has %d beads, not %s's %d; "
+            "%d of %d %s probes (%.*f%%) have no address in this IDAT and "
+            "will be NA (manifest mismatch)\n", path_basename(prefix), g->n,
+            expect_plat, registry_beads(expect_plat), s->n_addr_missing, s->n,
+            expect_plat, pct >= 1 || pct == 0 ? 1 : 4, pct);
     }
     *out = s; s = NULL; rc = SESAME_OK;
 
@@ -570,6 +599,7 @@ typedef struct {
     int32_t          nsamp, n;
     const sesame_index_t *ix;
     const char      *plat, *prep;
+    int              plat_named;   /* --platform named a registry platform */
     const uint8_t   *qmask, *bgmask, *ext;
     int32_t          qn, bgn, extn;
     int              min_beads, raw_signal, pneg_detection;
@@ -606,7 +636,8 @@ static void *pp_worker(void *arg)
         tot  = c->matTot  ? c->matTot  + (size_t)j*(size_t)n : NULL;
         pval = c->matPval ? c->matPval + (size_t)j*(size_t)n : NULL;
 
-        rc = build_sigdf_for(c->prefixes[j], c->ix, c->plat, c->min_beads, &raw, &e);
+        rc = build_sigdf_for(c->prefixes[j], c->ix, c->plat, c->plat_named,
+                             c->min_beads, &raw, &e);
         if (rc == SESAME_OK) st = raw->status;
         if (rc == SESAME_OK && c->want_qc)
             rc = sesame_qc_calc(raw, c->bgmask, c->bgn, c->ext, c->extn, &c->qcres[j], &e);
@@ -757,6 +788,8 @@ static int cmd_preprocess(int argc, char **argv)
     if (tmpdir) setenv("TMPDIR", tmpdir, 1);
     mkdir(outdir, 0777);                              /* ok if it already exists */
 
+    /* a platform the user named (not detected): a bead-count mismatch warns */
+    ctx.plat_named = platform && registry_beads(platform) > 0;
     if (!idxpath) {
         if (!platform) {
             char gp[4096]; sesame_idat_t *g0 = NULL; int32_t beads;
@@ -1563,7 +1596,7 @@ static int cmd_vcf(int argc, char **argv)
 
     /* raw SigDF -- genotyping must not infer channels (that erases the Type-I
      * channel-switch genotype signal). */
-    if (build_sigdf_for(prefix, ix, NULL, min_beads, &sdf, &e) != SESAME_OK) {
+    if (build_sigdf_for(prefix, ix, NULL, 0, min_beads, &sdf, &e) != SESAME_OK) {
         fprintf(stderr, "sesame: %s\n", e.msg); goto out;
     }
     if (outpath && !(out = fopen(outpath, "w"))) { fprintf(stderr, "sesame: cannot write %s\n", outpath); goto out; }
