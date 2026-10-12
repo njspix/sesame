@@ -137,12 +137,14 @@ PY
 }
 
 ## The third argument pins how many probes the two manifest lineages give a
-## different design type. Measured 2026-09-22 against InfiniumAnnotation v8.1
-## and sesameData 1.29.10; a change means a manifest moved -- see DIVERGENCES.md.
+## different design type. Measured 2026-10-12 against InfiniumAnnotation v8.3
+## and sesameData 1.29.10 (v8.1/v8.2: EPIC 2, HM450 2, MSA 0; v8.3 adds the
+## 63 Infinium-I probes it corrected); a change means a manifest moved -- see
+## DIVERGENCES.md.
 run_one EPICv2 EPICv2/206909630040_R03C01      0
-run_one MSA    MSA/207760740030_R01C03         0
-run_one EPIC   EPIC/GSM2995280_201868590258_R01C01 2
-run_one HM450  HM450/3999492009_R01C01         2
+run_one MSA    MSA/207760740030_R01C03         1
+run_one EPIC   EPIC/GSM2995280_201868590258_R01C01 34
+run_one HM450  HM450/3999492009_R01C01         32
 
 echo
 echo "passed $PASS, failed $FAIL"

@@ -27,16 +27,27 @@ if (length(args) < 4)
     stop("usage: compare_qcdpb.R <platform> <prefix> <c_qmask.txt> <c_betas.txt>")
 platform <- args[1]; prefix <- args[2]
 
-## Pins, measured 2026-10-08 on the v8.2 store, sesame 1.31.5, sesameData
-## 1.29.10. namis = probes NA on one side only; big = probes with
-## |diff| > 1e-3; ceiling = max |diff| over all the rest.
+## Pins, measured 2026-10-12 on the InfiniumAnnotation v8.3 store, sesame
+## 1.31.5, sesameData 1.29.10. namis = probes NA on one side only; big =
+## probes with |diff| > 1e-3; ceiling = max |diff| over all the rest.
+## v8.3 calls 63 probes Infinium-I that sesameData's older manifest calls
+## Infinium-II (HM450 30, EPIC 32, MSA 1; DIVERGENCES.md C:pneg-design-type):
+## the big sets below are exactly those probes, plus cg09334382 on EPIC.
 pins <- list(
-    HM450  = list(namis = 26, big = character(0), ceiling = 3.5e-4),
+    HM450  = list(namis = 28, ceiling = 5.3e-4, big =
+        c("cg02909136", "cg05618386", "cg06775939", "cg07434271",
+          "cg09443652", "cg09823095", "cg11900657", "cg18477191",
+          "cg20249919", "cg24746100", "cg25109431", "cg25967516",
+          "cg27207470", "cg27505684")),
     ## cg09334382: Infinium-II in sesameData, Infinium-I in v8 (corrected
     ## Illumina manifest) -- the design-type case run_dyebiasL.sh describes
-    EPIC   = list(namis = 91, big = "cg09334382", ceiling = 9.9e-4),
+    EPIC   = list(namis = 92, ceiling = 9.9e-4, big =
+        c("cg02909136", "cg05618386", "cg06775939", "cg07434271",
+          "cg09334382", "cg09823095", "cg11900657", "cg15499467",
+          "cg18477191", "cg20249919", "cg22409342", "cg24746100",
+          "cg25109431", "cg25967516", "cg27207470", "cg27505684")),
     EPICv2 = list(namis = 0, big = character(0), ceiling = 1.5e-5),
-    MSA    = list(namis = 20, big = character(0), ceiling = 1.7e-4))
+    MSA    = list(namis = 20, big = "cg12810120_TC11", ceiling = 2.1e-4))
 
 ## R's OWN qualityMask vs the CLI's, pinned as c(C-only, R-only). Exact
 ## (0/0) on all four once R reads sesameData's KYCG.<PLAT>.Mask.20261008,

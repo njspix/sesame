@@ -129,6 +129,17 @@ sesameData 1.29.10. Excluding just these two probes takes EPIC from
 platform: EPICv2 0, MSA 0, EPIC 2, HM450 2 — pinned in `tests/run_pneg.sh`,
 which fails loudly if a manifest moves them.
 
+**v8.3 (2026-10-12) moved them, on purpose.** InfiniumAnnotation v8.3 calls 63
+more probes Infinium-I (HM450 30, EPIC 32, MSA 1, e.g. `cg10689055`): Illumina's
+manifest has them as Infinium-I with a colour channel, but v8.2 had written
+them as Infinium-II because their alignment was not clean enough to give a
+channel from the genome. `sesameData` 1.29.10 still calls them Infinium-II, so
+the pinned counts are now EPICv2 0, MSA 1, EPIC 34, HM450 32, and the same
+probes are the pinned `> 1e-3` sets in `tests/compare_qcdpb.R` and the extra
+`> 0.01` probes in `tests/run_dyebiasL.sh`. The store is the right side here.
+With `sesameData` 1.31.1, whose `.address` objects are built from the v8.3
+orderings, both sides agree again.
+
 **A measurement trap worth recording.** `sesameData` stores `col` as a factor
 with levels `G`/`R` only, so Infinium-II probes are `NA`. Comparing the two
 orderings with `col.R != col.C` therefore returns `NA` for exactly these rows

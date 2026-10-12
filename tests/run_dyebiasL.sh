@@ -82,7 +82,10 @@ cat(sprintf("ok   %-8s E: n=%d  median=%.1e p99=%.1e p99.99=%.1e  >1e-3: %d  >0.
 ## because the two reclassified probes are in its Infinium-I median pools on one
 ## side only, moving fG/fR very slightly for every probe -- annotation, not a
 ## bug. A real E fault moves the distribution by 0.1+ and fails on p99 alone.
-ok <- qs[2] < 1e-3 && n01 <= 25 && (n01/n) < 1e-4 && nam == 0
+## The count allows the design-type probes: v8.3 calls 30 (HM450) / 32 (EPIC)
+## probes Infinium-I that sesameData calls Infinium-II, and each reads
+## differently on the two sides (DIVERGENCES.md C:pneg-design-type).
+ok <- qs[2] < 1e-3 && n01 <= 40 && (n01/n) < 1e-4 && nam == 0
 if (!ok) {
     cat(sprintf("FAIL %s: E disagrees beyond annotation lineage (p99=%.2e, >0.01: %d)\n",
                 plat, qs[2], n01))
