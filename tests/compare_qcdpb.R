@@ -37,8 +37,6 @@ pins <- list(
     EPIC   = list(namis = 91, big = "cg09334382", ceiling = 9.9e-4),
     EPICv2 = list(namis = 0, big = character(0), ceiling = 1.5e-5),
     MSA    = list(namis = 20, big = character(0), ceiling = 1.7e-4))
-pin <- pins[[platform]]
-if (is.null(pin)) stop(sprintf("compare_qcdpb.R has no pin for %s", platform))
 
 ## R's OWN qualityMask vs the CLI's, pinned as c(C-only, R-only). Exact
 ## (0/0) on all four once R reads sesameData's KYCG.<PLAT>.Mask.20261008,
@@ -52,6 +50,15 @@ native_pins <- if (new_masks) {
 } else {
     list(EPICv2 = c(166, 1079), MSA = c(76, 9))
 }
+
+## With sesameData's v8.2-built objects (the KYCG masks above and the
+## <PLAT>.address rebuilt from the store ordering), R reads exactly what the
+## CLI reads and the betas agree to ~1e-15 on all four (measured 2026-10-08
+## on a private install): no NA mismatch, nothing over 1e-12.
+if (new_masks) pins <- lapply(pins, function(p)
+    list(namis = 0, big = character(0), ceiling = 1e-12))
+pin <- pins[[platform]]
+if (is.null(pin)) stop(sprintf("compare_qcdpb.R has no pin for %s", platform))
 
 cmask <- readLines(args[3])
 cb <- read.table(args[4], colClasses = c("character", "numeric"))
@@ -87,14 +94,6 @@ if (!is.null(native_pins[[platform]])) {
 } else {
     cat(sprintf("%s native R qualityMask: not compared, sesame %s reads the %s\n",
                 tag, packageVersion("sesame"), "older KYCG tracks"))
-}
-## The beta pins below were measured against sesame 1.31.5. R with the new
-## mask objects also changes its background mask, so they move: re-measure
-## and re-pin them when the shared oracle is upgraded (the test fails until
-## then, by design).
-if (new_masks) {
-    cat(sprintf("%s note: R has the 20261008 masks; beta pins are 1.31.5's\n",
-                tag))
 }
 
 ## (2) the betas, the rest of the default pipeline after that Q
